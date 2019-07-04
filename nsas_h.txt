@@ -1,0 +1,158 @@
+/**
+ * @brief	Sensor Actuator Controller(NSAS)
+ */
+#ifndef _SAC_NSAS_H_
+#define _SAC_NSAS_H_
+
+// TODO #2002 表記が変わっている為、保留
+
+#define RMAP_ADDR_TLM_FLG1				0x00000EA8
+#define RMAP_TLM_FLG1_NSAS_TLM			0x07
+#define RMAP_ADDR_NSAS1_TLM1			0x00000DAC
+#define RMAP_ADDR_NSAS1_TLM2			0x00000DE2
+#define RMAP_ADDR_NSAS2_TLM1			0x00000E1C
+#define RMAP_ADDR_NSAS2_TLM2			0x00000E54
+
+#ifdef _CDH_
+/* RMAP address */
+#define RMAP_ADDR_NSAS1_CMD_MDB			0x00000648		/* CMD(W):NSAS1_CMD_MDB */
+#define RMAP_ADDR_NSAS1_CMD_PINGB		0x0000064C		/* CMD(W):NSAS1_CMD_PINGB */
+#define RMAP_ADDR_NSAS1_CMD_INITB		0x00000658		/* CMD(W):NSAS1_CMD_INITB */
+#define RMAP_ADDR_NSAS1_CMD_GOB			0x00000664		/* CMD(W):NSAS1_CMD_GOB */
+#define RMAP_ADDR_NSAS1_CMD_6HB			0x00000670		/* CMD(W):NSAS1_CMD_6hB */
+#define RMAP_ADDR_NSAS1_CMD_2HB			0x0000067C		/* CMD(W):NSAS1_CMD_2hB */
+#define RMAP_ADDR_NSAS1_CMD_3HB			0x00000688		/* CMD(W):NSAS1_CMD_3hB */
+#define RMAP_ADDR_NSAS2_CMD_MDB			0x00000698		/* CMD(W):NSAS2_CMD_MDB */
+#define RMAP_ADDR_NSAS2_CMD_PINGB		0x0000069C		/* CMD(W):NSAS2_CMD_PINGB */
+#define RMAP_ADDR_NSAS2_CMD_INITB		0x000006A8		/* CMD(W):NSAS2_CMD_INITB */
+#define RMAP_ADDR_NSAS2_CMD_GOB			0x000006B4		/* CMD(W):NSAS2_CMD_GOB */
+#define RMAP_ADDR_NSAS2_CMD_6HB			0x000006C0		/* CMD(W):NSAS2_CMD_6hB */
+#define RMAP_ADDR_NSAS2_CMD_2HB			0x000006CC		/* CMD(W):NSAS2_CMD_2hB */
+#define RMAP_ADDR_NSAS2_CMD_3HB			0x000006D8		/* CMD(W):NSAS2_CMD_3hB */
+
+#define RMAP_ADDR_NSAS1_TLM_PING		0x00000DAC		/* TLM(R):NSAS1_TLM_PING */
+#define RMAP_ADDR_NSAS1_TLM_6H			0x00000DCC		/* TLM(R):NSAS1_TLM_6h */
+#define RMAP_ADDR_NSAS1_TLM_2H			0x00000DE8		/* TLM(R):NSAS1_TLM_2h */
+#define RMAP_ADDR_NSAS1_TLM_3H			0x00000E00		/* TLM(R):NSAS1_TLM_3h */
+#define RMAP_ADDR_NSAS2_TLM_PING		0x00000E0C		/* TLM(R):NSAS2_TLM_PING */
+#define RMAP_ADDR_NSAS2_TLM_6H			0x00000E2C		/* TLM(R):NSAS2_TLM_6h */
+#define RMAP_ADDR_NSAS2_TLM_2H			0x00000E48		/* TLM(R):NSAS2_TLM_2h */
+#define RMAP_ADDR_NSAS2_TLM_3H			0x00000E60		/* TLM(R):NSAS2_TLM_3h */
+
+
+
+/* CMD_FLG1 number of bits */
+#define NSAS1_CMD_FLG 28
+#define NSAS2_CMD_FLG 29
+
+#endif /* _CDH_ */
+
+#ifdef _GNC_
+/* RMAP address */
+#define RMAP_ADDR_NSAS1_CMD_MDG			0x00000248		/* CMD(W):NSAS1_CMD_MDG */
+#define RMAP_ADDR_NSAS1_CMD_PINGG		0x0000024C		/* CMD(W):NSAS1_CMD_PINGG */
+#define RMAP_ADDR_NSAS1_CMD_INITG		0x00000258		/* CMD(W):NSAS1_CMD_INITG */
+#define RMAP_ADDR_NSAS1_CMD_GOG			0x00000264		/* CMD(W):NSAS1_CMD_GOG */
+#define RMAP_ADDR_NSAS1_CMD_6HG			0x00000270		/* CMD(W):NSAS1_CMD_6hG */
+#define RMAP_ADDR_NSAS1_CMD_2HG			0x0000027C		/* CMD(W):NSAS1_CMD_2hG */
+#define RMAP_ADDR_NSAS1_CMD_3HG			0x00000288		/* CMD(W):NSAS1_CMD_3hG */
+#define RMAP_ADDR_NSAS2_CMD_MDG			0x00000298		/* CMD(W):NSAS2_CMD_MDG */
+#define RMAP_ADDR_NSAS2_CMD_PINGG		0x0000029C		/* CMD(W):NSAS2_CMD_PINGG */
+#define RMAP_ADDR_NSAS2_CMD_INITG		0x000002A8		/* CMD(W):NSAS2_CMD_INITG */
+#define RMAP_ADDR_NSAS2_CMD_GOG			0x000002B4		/* CMD(W):NSAS2_CMD_GOG */
+#define RMAP_ADDR_NSAS2_CMD_6HG			0x000002C0		/* CMD(W):NSAS2_CMD_6hG */
+#define RMAP_ADDR_NSAS2_CMD_2HG			0x000002CC		/* CMD(W):NSAS2_CMD_2hG */
+#define RMAP_ADDR_NSAS2_CMD_3HG			0x000002D8		/* CMD(W):NSAS2_CMD_3hG */
+#define RMAP_ADDR_NSAS1_TLM_PING		0x00000DAC		/* TLM(R):NSAS1_TLM_PING */
+#define RMAP_ADDR_NSAS1_TLM_6H			0x00000DCC		/* TLM(R):NSAS1_TLM_6h */
+#define RMAP_ADDR_NSAS1_TLM_2H			0x00000DE8		/* TLM(R):NSAS1_TLM_2h */
+#define RMAP_ADDR_NSAS1_TLM_3H			0x00000E00		/* TLM(R):NSAS1_TLM_3h */
+#define RMAP_ADDR_NSAS2_TLM_PING		0x00000E0C		/* TLM(R):NSAS2_TLM_PING */
+#define RMAP_ADDR_NSAS2_TLM_6H			0x00000E2C		/* TLM(R):NSAS2_TLM_6h */
+#define RMAP_ADDR_NSAS2_TLM_2H			0x00000E48		/* TLM(R):NSAS2_TLM_2h */
+#define RMAP_ADDR_NSAS2_TLM_3H			0x00000E60		/* TLM(R):NSAS2_TLM_3h */
+
+#endif /* _GNC_ */
+
+#define NSAS_RAW_DATA_LENGTH            56
+#define NSAS_TLM_PING_LENGTH			32
+#define NSAS_TLM_6h_LENGTH				28
+#define NSAS_TLM_2h_LENGTH				24
+#define NSAS_TLM_3h_LENGTH				12
+
+#define SAC_NSAS_FEND					0xC0
+#define SAC_NSAS_DEST_ADDR				0x11
+
+
+/* NSASサンプレゼンス */
+#define SAC_NSAS_SP_ON			1
+#define SAC_NSAS_SP_OFF			0
+
+/* NSASステータス */
+#define SAC_STS_NORMAL			0
+#define SAC_STS_ABNRML			1
+
+/* NSAS EnaDis */
+#define SAC_NSAS_ENA			1
+#define SAC_NSAS_DIS			0
+
+/* NSAS number */
+#define SAC_NSAS_NUM	2
+
+
+typedef struct {
+// TODO implement
+	int		Reserve;
+}NSAS_startup;
+
+typedef struct {
+// TODO implement
+	int		Reserve;
+}NSAS_req;
+
+typedef struct {
+// TODO implement
+	int		Reserve;
+}NSAS_ping;
+
+typedef struct {
+// TODO implement
+	int		Reserve;
+}NSAS_Cmd;
+
+/* NSAS raw data */
+typedef struct
+{
+	float 	xvector;
+	float	yvector;
+	float	zvector;
+	int8	FEND;
+	int8	DestAddr;
+	int8	SreAddr;
+	int8	MCF;
+	int8	Tlmchannel;
+	int16	CRC;
+/* TODO implement */
+} SAC_NSAS_TlmRawData_t;
+
+// TODO refs #2012
+typedef struct {
+	double	Sn[3];			/* 物理量に変換後の太陽方向ベクトル（3軸） */
+	int8	FitSts;			/* Fit Quality ステータス */
+	int8	GeoSts;			/* Geometry Quality ステータス */
+	int8	IsValid;		/* データ有効フラグ */
+	int8	EnaDis;			/* 有効無効の設定 */
+	SAC_NSAS_TlmRawData_t	nsasRawData;
+}NSAS_data;
+
+/* global function define */
+int32 SAC_NSAS_Init(uint32,NSAS_startup*);	/* INIT Command */
+int32 SAC_NSAS_Ping_Set(uint32,NSAS_ping*);	/* PING Command */
+int32 SAC_NSAS_Req_Set(uint32,NSAS_req*); 	/* Application Telemetry Request */
+int32 SAC_NSAS_Cmd_Set(uint32,NSAS_Cmd*);	/* Application Command */
+
+int32 SAC_NSAS_Data_Update(uint8 *rowDatPt, uint32 IfeAddrHead);
+int32 SAC_NSAS_Status_Get(uint32 nsasNum, NSAS_data* data);
+int32 SAC_NSAS_RawData_Get(uint32 nsasNum, SAC_NSAS_TlmRawData_t* rawData);
+
+#endif /* _SAC_NSAS_H_ */

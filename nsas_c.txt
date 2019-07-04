@@ -1,0 +1,286 @@
+/**
+ * @brief	Sensor Actuator Controller(NSAS)
+ */
+
+#include "cfe.h"
+#include "cfe_platform_cfg.h"
+#include "systemlog.h"
+#include "common_config.h"
+#include "sac_nsas.h"
+
+EXPORT NSAS_data nsasData;
+
+#if defined(_CDH_) || defined(_GNC_)	// TODO 仮(BUS/GNC/SHUの整理は別途行う)
+
+LOCAL NSAS_data nsasStat[SAC_NSAS_NUM];		/* レジスタの値から物理量に計算した値 */
+LOCAL SAC_NSAS_TlmRawData_t	nsasRawData[SAC_NSAS_NUM];	/* 生データ */
+
+/**
+ * SAC_NSAS_Init
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_NSAS_Init(uint32 number, NSAS_startup* startup)
+{
+	int32 ret = OS_SUCCESS;
+	/* 初期起動は地上からのコマンドで行う  */
+	/* TODO 排他処理の準備 */
+	return ret;
+}
+
+/**
+ * SAC_NSAS_Req_Set
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_NSAS_Req_Set(uint32 number, NSAS_req* req)
+{
+	// TODO implement
+/* 	Sub Format 3:	(without padding) APPLICATION-TELEMETRY - request telemetry from NSAS application */
+/* 周期書き込みにリクエストコマンドを追加するAPI */
+
+	int32 ret = OS_SUCCESS;
+
+	return ret;
+}
+
+/**
+ * SAC_NSAS_Enable
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_NSAS_Enable(uint32 number)
+{
+	int32 ret = OS_SUCCESS;
+	/* NSASのEnaDisを変更するAPI */
+/* TODO 排他処理 */
+	if(0 < number && number < SAC_NSAS_NUM + 1 )
+	{
+		nsasStat[number + 1].EnaDis = SAC_NSAS_ENA;
+	}
+	return ret;
+}
+/**
+ * SAC_NSAS_Disable
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_NSAS_Disable(uint32 number)
+{
+	int32 ret = OS_SUCCESS;
+	/* NSASのEnaDisを変更するAPI */
+/* TODO 排他処理 */
+
+	if(0 < number && number < SAC_NSAS_NUM + 1 )
+	{
+		nsasStat[number + 1].EnaDis = SAC_NSAS_DIS;
+	}
+	return ret;
+}
+
+
+/**
+ * SAC_NSAS_Cmd_Set
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+
+int32 SAC_NSAS_Cmd_Set(uint32 number, NSAS_Cmd* data){
+	// TODO implement
+	/* 地上からのコマンドでCmdを送るAPI(書き込みデータに1度だけ追加する) */
+	int32 ret = OS_SUCCESS;
+//	int32 rmapRet = OS_SUCCESS;
+
+//	SAC_IfeCmdDatSetNormalMode(uint32 addr, uint32 size, uint8* data);
+
+//	SAC_IfeCmdFlg1_put(NSAS1_CMD_FLG);
+//	SAC_IfeCmdFlg1_put(NSAS2_CMD_FLG);
+
+	return ret;
+}
+
+/**
+ * SAC_NSAS_Data_Update
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ *
+ *   cf. F&F (F4-1)
+ *   cf. SAC_GPS_Data_Update
+ */
+EXPORT int32 SAC_NSAS_Data_Update(uint8 *rowDatPt, uint32 IfeAddrHead)
+{
+	// TODO implement
+	int32 ret = OS_SUCCESS;
+//	int32 rmapRet = OS_SUCCESS;
+
+#if defined(_CDH_) || defined(_GNC_)
+
+	uint32 offset = 0;
+	uint8	*src = (uint8 *)rowDatPt;
+	uint8 RMAP_ADDR_NSAS_TLM[4] = {RMAP_ADDR_NSAS1_TLM1,RMAP_ADDR_NSAS1_TLM2,RMAP_ADDR_NSAS2_TLM1,RMAP_ADDR_NSAS2_TLM2};
+	int i=0;
+	int nsasTlm;
+
+	/*
+	 * NSAS1->nsasData[0]
+	 * NSAS2->nsasData[1]
+	 * */
+	/* TLM_FLG1:NSAS1_TLM
+	 * TLM_FLG1:NSAS2_TLM
+	 * check TLM_FLG1 if NSAS Telemetry Data has updated ****
+	 * store the result (TURE of FALSE) to "nsasData[0].IsValid","nsasData[1].IsValid"
+	 * NSASテレメトリ更新フラグの確認：
+	 * この時、今回の"更新フラグ"を保持する。(nsasData[0].IsValid)
+	 * NSAS check update Telemetry flag
+	 * At this time, Hold the update flag in nsasData[0].IsValid
+	 * */
+
+
+	/* NSAS Enable/Disable Check */
+	/* NSASは、コマンドで個別に有効無効を指定できる。
+	* 無効の場合は、NSASデータ更新フラグが落ちている状態と同じく、以降の処理を行わない。
+	* (nsasData[0].EnaDis)
+	*
+	*/
+
+	for(i=0;i<4;i++){
+		offset = RMAP_ADDR_TLM_FLG1- IfeAddrHead;
+		nsasTlm = *(rowDatPt + offset) & RMAP_TLM_FLG1_NSAS_TLM;
+
+		// InValid and Enable
+		if(nsasTlm != 0){
+			nsasData.IsValid = TRUE;
+			nsasData.EnaDis = TRUE;
+		}
+		else{
+			nsasData.IsValid = FALSE;
+			nsasData.EnaDis = FALSE;
+			return ret;
+		}
+
+		if(nsasData.IsValid == TRUE && nsasData.EnaDis == TRUE){
+			// Save NSAS raw data in the internal area
+			offset = (RMAP_ADDR_NSAS_TLM[i] - IfeAddrHead);
+			memcpy((uint8 *)&nsasData.nsasRawData, (rowDatPt + offset), NSAS_RAW_DATA_LENGTH);
+
+
+			offset = (RMAP_ADDR_NSAS_TLM[i] - IfeAddrHead);
+			src++;
+			nsasRawData->DestAddr		=		*(src++);
+			nsasRawData->SreAddr		=		*(src++);
+			nsasRawData->MCF			=		*(src++);
+			nsasRawData->Tlmchannel		=		*(src++);
+
+			/*// Sub format 2
+			if(nsasRawData->Tlmchannel == 0x02){
+				nsasRawData->MinBrighness			=	*(src++) << 16;
+				nsasRawData->MaxBrighness			=	*(src++) << 16;
+				nsasRawData->IntegratedBrighness	=	*(src++) << 32;
+				nsasRawData->ExposureLength			=	*(src++) << 32;
+				nsasRawData->CRC					=	*(src++);
+				src++;
+			}*/
+
+			// Sub format 3
+			if(nsasRawData->Tlmchannel == 0x02){
+				nsasRawData->xvector		=		*(src++) << 16;
+				nsasRawData->yvector		=		*(src++) << 16;
+				nsasRawData->zvector		=		*(src++) << 16;
+				nsasData.FitSts				=		*(src++) << 8;
+				nsasData.GeoSts				=		*(src++) << 8;
+				nsasRawData->CRC			= 		*(src++);
+				src++;
+			}
+
+		}
+	}
+					/* if the Data has updated,and the NSAS is Enable, go process below */
+
+					/* Save NSAS raw data in the internal area */ //******
+					//(nsasRawData[0])
+
+					/* (a) Get Fit Quality ステータス・ Geometry Quality ステータス  from raw data (nsasData[0].FitSts, nsasData[0].GeoSts)　*/
+
+					/* (b) Calculate NSLC（NSAS単体座標系）太陽方向ベクトル  from raw data (nsasData[0].Sn[0])
+					 * 正規化処理を行う。
+					 * */
+
+#endif /* defined(_CDH_) || defined(_GNC_) */
+
+	return ret;
+}
+
+/**
+ * SAC_NSAS_Status_Get
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_NSAS_Status_Get(uint32 nsasNum, NSAS_data* data)
+{
+	int32 ret = OS_SUCCESS;
+
+	if (1 <= nsasNum && nsasNum <= 2) {
+		memcpy(data, &nsasStat[nsasNum - 1], sizeof(NSAS_data));
+	} else {
+		SYS__LOG(CFE_SYS_WARNING, LOG_CODE_WRN_VALUE,
+				"NSAS number(%d) is invalid.\n", nsasNum);
+		ret = OS_ERROR;
+	}
+
+	return ret;
+}
+
+/**
+ * SAC_NSAS_RawData_Get
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_NSAS_RawData_Get(uint32 nsasNum, SAC_NSAS_TlmRawData_t* rawData)
+{
+	// TODO 要排他処理?
+	int32 ret = OS_SUCCESS;
+
+	if (1 <= nsasNum && nsasNum <= 2) {
+		memcpy(rawData, &nsasRawData[nsasNum - 1], sizeof(SAC_NSAS_TlmRawData_t));
+	} else {
+		SYS__LOG(CFE_SYS_WARNING, LOG_CODE_WRN_VALUE,
+				"NSAS number(%d) is invalid.\n", nsasNum);
+		ret = OS_ERROR;
+	}
+	return ret;
+}
+
+#endif /* defined(_CDH_) || defined(_GNC_) */
+
