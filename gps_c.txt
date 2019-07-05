@@ -1,0 +1,270 @@
+/**
+ * @brief	Sensor Actuator Controller(GPS)
+ */
+
+#include "cfe.h"
+#include "cfe_platform_cfg.h"
+#include "systemlog.h"
+#include "common_config.h"
+#include "sac_ife.h"
+#include "sac_gps.h"
+#include "ci_lab_cmdexe_lib.h"
+
+/*
+** Global Variable definition.
+*/
+EXPORT SAC_Gps_TlmData_t gGPSTlmData;
+
+
+
+LOCAL uint8 SAC_GPS_Checksum_Cnv(uint8 *srcPt);
+
+
+
+//#if defined(_CDH_) || defined(_GNC_)	// TODO 仮(BUS/GNC/SHUの整理は別途行う)
+/**
+ * SAC_GPS_Init
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_GPS_Init(void)
+{
+	// TODO implement
+	int32 ret = OS_SUCCESS;
+//	int32 rmapRet = OS_SUCCESS;
+
+    memset(&gGPSTlmData, 0x00, sizeof(gGPSTlmData));
+
+	return ret;
+}
+
+/**
+ * SAC_GPS_Power_Set
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_GPS_Power_Set(uint8 gpsPower)
+{
+	int32 ret = OS_SUCCESS;
+#if defined(_CDH_) || defined(_GNC_)	// TODO 仮(BUS/GNC/SHUの整理は別途行う)
+
+#ifdef _CDH_
+	uint32 addr = RMAP_ADDR_GPS_CMD_PWB;
+#endif /* _CDH_ */
+#ifdef _GNC_
+	uint32 addr = RMAP_ADDR_GPS_CMD_PWG;
+#endif /* _GNC_ */
+
+	uint8 data[4] = {0x00, 0x00, 0x00, gpsPower};
+
+	if (!(gpsPower == SAC_GPS_POWER_ON || gpsPower == SAC_GPS_POWER_OFF)) {
+		SYS__LOG(CFE_SYS_WARNING, LOG_CODE_WRN_VALUE,
+				"gpsPower(0x%02X) is invalid.\n", gpsPower);
+	}
+	ret = SAC_IfeCmdDatSetNormalMode(addr, sizeof(data), data);
+
+#endif /* defined(_CDH_) || defined(_GNC_) */
+
+	return ret;
+}
+
+/**
+ * SAC_GPS_Sync_Set
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_GPS_Sync_Set(GPS_sync sync)
+{
+	// TODO implement
+	int32 ret = OS_SUCCESS;
+//	int32 rmapRet = OS_SUCCESS;
+
+	return ret;
+}
+
+/**
+ * SAC_GPS_Status_Get
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_GPS_Status_Get(GPS_status* status)
+{
+	// TODO implement
+	int32 ret = OS_SUCCESS;
+//	int32 rmapRet = OS_SUCCESS;
+
+	return ret;
+}
+
+/*******************************************************************
+ * SAC GPS Data Update
+ * @param  None
+ * @return OS_SUCCESS: Success
+ *         Other     : Failure
+ * @NOTE
+ *******************************************************************/
+EXPORT int32 SAC_GPS_Data_Update(uint8 *allTlmRowDatPt, uint32 IfeAddrHead)
+{
+    int32  ret     = OS_SUCCESS;
+//#if defined(_CDH_) || defined(_GNC_)	// TODO 仮(BUS/GNC/SHUの整理は別途行う)
+#if defined(_CDH_) && !defined(_TEST1_)	// TODO CI fix
+
+	uint32 offset = 0;
+
+	/* TLM_FLG1:GPS_TLM */
+	offset = (RMAP_ADDR_TLM_FLG1 + RMAP_POS_TLM_FLG1_GPS_TLM) - IfeAddrHead;
+	gGPSTlmData.gpsTlm = *(allTlmRowDatPt + offset) & RMAP_MASK_TLM_FLG1_GPS_TLM;
+    if (gGPSTlmData.gpsTlm == 0) {
+// TODO for debug
+//    	PRINTF("[SAC_GPS_Data_Update]GPS_TLM FLAG is not 1.\n");
+    	return ret;
+    }
+
+    /* Save GPS raw data in the internal area */
+    offset = (RMAP_ADDR_GPS_TLM_PWR - IfeAddrHead);
+    memcpy((uint8 *)&gGPSTlmData.gpsRawData, (allTlmRowDatPt + offset), GPS_RAW_DATA_LENGTH);
+
+    /* Convert GPS power raw data to numeric */
+    offset = (RMAP_ADDR_GPS_TLM_PWR + RMAP_POS_GPS_TLM_PWR) - IfeAddrHead;
+    if (*(allTlmRowDatPt + offset) == SAC_GPS_POWER_ON) {
+        gGPSTlmData.gpsNumData.gpsTlmPwr = 1;
+    } else {
+        gGPSTlmData.gpsNumData.gpsTlmPwr = 0;
+    }
+
+    /* Convert GPS position raw data to numeric */
+    memcpy(gGPSTlmData.gpsNumData.gpsPosNumData.lsp,
+			gGPSTlmData.gpsRawData.gpsPosTlm,
+			sizeof(gGPSTlmData.gpsNumData.gpsPosNumData.lsp));
+
+    sscanf((const char *)&gGPSTlmData.gpsRawData.gpsPosTlm[7],
+    		"%lu.%lu,%lu,%lf,%lf,%lf,%u,%f",
+     	   &gGPSTlmData.gpsNumData.gpsPosNumData.gpsHighTime,
+           &gGPSTlmData.gpsNumData.gpsPosNumData.gpsLowTime,
+           &gGPSTlmData.gpsNumData.gpsPosNumData.gpsWeek,
+           &gGPSTlmData.gpsNumData.gpsPosNumData.xPosition,
+           &gGPSTlmData.gpsNumData.gpsPosNumData.yPosition,
+           &gGPSTlmData.gpsNumData.gpsPosNumData.zPosition,
+           &gGPSTlmData.gpsNumData.gpsPosNumData.pvt,
+           &gGPSTlmData.gpsNumData.gpsPosNumData.pdop);
+
+	gGPSTlmData.gpsNumData.gpsPosNumData.checksum =
+			SAC_GPS_Checksum_Cnv(gGPSTlmData.gpsRawData.gpsPosTlm);
+
+    /* Convert GPS velocity raw data to numeric */
+	memcpy(gGPSTlmData.gpsNumData.gpsVelNumData.lsv,
+		gGPSTlmData.gpsRawData.gpsVelTlm,
+		sizeof(gGPSTlmData.gpsNumData.gpsVelNumData.lsv));
+
+	sscanf((const char *) &gGPSTlmData.gpsRawData.gpsVelTlm[7],
+			"%lu.%lu,%lu,%lf,%lf,%lf,%u,%f",
+			&gGPSTlmData.gpsNumData.gpsVelNumData.gpsHighTime,
+			&gGPSTlmData.gpsNumData.gpsVelNumData.gpsLowTime,
+			&gGPSTlmData.gpsNumData.gpsVelNumData.gpsWeek,
+			&gGPSTlmData.gpsNumData.gpsVelNumData.vxVelocity,
+			&gGPSTlmData.gpsNumData.gpsVelNumData.vyVelocity,
+			&gGPSTlmData.gpsNumData.gpsVelNumData.vzVelocity,
+			&gGPSTlmData.gpsNumData.gpsVelNumData.pvt,
+			&gGPSTlmData.gpsNumData.gpsVelNumData.pdop);
+
+	gGPSTlmData.gpsNumData.gpsVelNumData.checksum =
+			SAC_GPS_Checksum_Cnv(gGPSTlmData.gpsRawData.gpsVelTlm);
+
+    if (CI_TimeSyncData.GpsTimeSync == TRUE)
+    {
+        CI_GpsTimeSet(gGPSTlmData.gpsNumData.gpsPosNumData.gpsHighTime);
+        CI_GpsTimeSync();
+    }
+
+#endif /* defined(_CDH_) || defined(_GNC_) */
+
+    return ret;
+}
+
+/*******************************************************************
+ * SAC GPS Raw Data Get
+ * @param  [O]gpsRawData : GPS raw data
+ * @return None
+ * @NOTE
+ *******************************************************************/
+EXPORT void SAC_GPS_RawData_Get(SAC_Gps_TlmRawData_t *gpsRawData)
+{
+    SAC_Gps_TlmRawData_t *tlm = gpsRawData;
+    int32 intLevel = OS_IntLock();
+
+    /* Set GPS raw data */
+    memcpy((uint8 *)tlm, &gGPSTlmData.gpsRawData, GPS_RAW_DATA_LENGTH);
+    OS_IntUnlock(intLevel);
+}
+
+/*******************************************************************
+ * SAC GPS Numeric Data Get
+ * @param  [O]gpsNumData : GPS numeric data
+ * @return OS_SUCCESS: Success
+ *         Other: Failure
+ * @NOTE
+ *******************************************************************/
+EXPORT void SAC_GPS_NumericData_Get(SAC_Gps_TlmNumData_t *gpsNumData)
+{
+    SAC_Gps_TlmNumData_t *tlm = gpsNumData;
+    int32 intLevel = OS_IntLock();
+
+    /* Set GPS num data */
+    memcpy((uint8 *)tlm, &gGPSTlmData.gpsNumData, sizeof(gGPSTlmData.gpsNumData));
+    OS_IntUnlock(intLevel);
+}
+
+/*******************************************************************
+ * SAC GPS Checksum Cnvert
+ * @param  [I]srcPt : GPS raw data
+ * @return Checksum
+ * @NOTE
+ *******************************************************************/
+LOCAL uint8 SAC_GPS_Checksum_Cnv(uint8 *srcPt)
+{
+	uint8 csNum = 0;
+	uint8 *csPt = NULL;
+	uint8 csAsc[2] = {0x00, 0x00};
+	uint8 csCnv[2] = {0x00, 0x00};
+	uint32 lpCnt = 0;
+
+	/* srcPtの先頭から '*'を探し、'*'の後ろ2バイトを抽出する */
+	csPt = strchr(srcPt, '*');
+	memcpy(csAsc, csPt+1, 2);
+
+	/* 1バイトずつ数値に変換する */
+	for ( lpCnt = 0; lpCnt < 2; lpCnt++ ) {
+		if (0x30 <= csAsc[lpCnt] && csAsc[lpCnt] <= 0x39) {
+			csCnv[lpCnt] = (csAsc[lpCnt] - 0x30);
+		} else if (0x41 <= csAsc[lpCnt] && csAsc[lpCnt] <= 0x46) {
+			csCnv[lpCnt] = (csAsc[lpCnt] - 0x41) + 10;
+		} else if (0x61 <= csAsc[lpCnt] && csAsc[lpCnt] <= 0x66){
+			csCnv[lpCnt] = (csAsc[lpCnt] - 0x61) + 10;
+		} else {
+			csCnv[lpCnt] = 0;
+		}
+	}
+
+	/* 変換した2バイトを合わせて1バイトの数値にする */
+	csNum = (csCnv[0] << 4 | csCnv[1]);
+
+	return csNum;
+}
+
+//#endif /* defined(_CDH_) || defined(_GNC_) */

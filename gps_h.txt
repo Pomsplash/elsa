@@ -1,0 +1,127 @@
+/**
+ * @brief	Sensor Actuator Controller(GPS)
+ */
+#ifndef _SAC_GPS_H_
+#define _SAC_GPS_H_
+
+// TODO #2002 チェック済
+
+#ifdef _CDH_
+/* RMAP address */
+#define RMAP_ADDR_GPS_CMD_PWB			0x00000640		/* CMD(W):GPS_CMD_PWB */
+#define RMAP_ADDR_GPS_TLM_PWR			0x00000D00		/* TLM(R):GPS_TLM_PWR */
+#define RMAP_ADDR_GPS_TLM_POS			0x00000D04		/* TLM(R):GPS_TLM_POS */
+#define RMAP_ADDR_GPS_TLM_VEL			0x00000D54		/* TLM(R):GPS_TLM_VEL */
+#define RMAP_ADDR_GPS_TLM_PS			0x00000DA4		/* TLM(R):GPS_TLM_PS */
+
+/* RMAP Byte position */
+#define RMAP_POS_GPS_TLM_PWR			3
+
+#endif /* _CDH_ */
+
+#ifdef _GNC_
+/* RMAP address */
+#define RMAP_ADDR_GPS_CMD_PWG			0x00000240		/* CMD(W):GPS_CMD_PWG */
+#define RMAP_ADDR_GPS_TLM_PWR			0x00000D00		/* TLM(R):GPS_TLM_PWR */
+#define RMAP_ADDR_GPS_TLM_POS			0x00000D04		/* TLM(R):GPS_TLM_POS */
+#define RMAP_ADDR_GPS_TLM_VEL			0x00000D54		/* TLM(R):GPS_TLM_VEL */
+#define RMAP_ADDR_GPS_TLM_PS			0x00000DA4		/* TLM(R):GPS_TLM_PS */
+
+#endif /* _GNC_ */
+
+#define GPS_RAW_DATA_LENGTH                                                                                            \
+    (GPS_TELEMETRY_POWER_LENGTH + GPS_POSITION_TELEMETRY_LENGTH + GPS_VELOCITY_TELEMETRY_LENGTH +                      \
+     GPS_POSITION_FIX_TELEMETRY_LENGTH)
+#define GPS_TELEMETRY_POWER_LENGTH        (4)
+#define GPS_POSITION_TELEMETRY_LENGTH     (80)
+#define GPS_VELOCITY_TELEMETRY_LENGTH     (80)
+#define GPS_POSITION_FIX_TELEMETRY_LENGTH (4)
+
+/* SAC_GPS_Power_Set */
+#define SAC_GPS_POWER_ON		0x06
+#define SAC_GPS_POWER_OFF		0x09
+
+/*
+** Type definitions section
+*/
+typedef struct {
+// TODO implement
+	int		Reserve;
+}GPS_sync;
+
+typedef struct {
+// TODO implement
+	int		Reserve;
+}GPS_status;
+
+/* GPS raw data */
+typedef struct
+{
+    uint32 gpsTlmPwr;
+    uint8  gpsPosTlm[80];
+    uint8  gpsVelTlm[80];
+    uint32 gpsPosFixTlm;
+} SAC_Gps_TlmRawData_t;
+
+/* GPS position numeric data */
+typedef struct
+{
+    uint8 lsp[6];         /* LEO satellite position                 */
+    uint8 reserve1[2]; 	  /* reserve                 */
+    uint32 gpsHighTime; /* GPS High time                          */
+    uint32 gpsLowTime;  /* GPS Low time                           */
+    uint32 gpsWeek;     /* GPS week                               */
+    double xPosition;   /* X position referenced to WGS-84 [m]    */
+    double yPosition;   /* Y position referenced to WGS-84 [m]    */
+    double zPosition;   /* Z position referenced to WGS-84 [m]    */
+    uint8  pvt;         /* Number of satellites used for PVT      */
+    float  pdop;        /* Position Dilution of Precision (PDOP)  */
+    uint8 checksum;    /* The checksum data, always begin with * */
+    uint8 reserve2[3]; 	  /* reserve                 */
+} SAC_Gps_TlmPosNumData_t;
+
+/* GPS velocity numeric data */
+typedef struct
+{
+	uint8 lsv[6];         /* LEO satellite velocity                 */
+    uint8 reserve1[2]; 	  /* reserve                 */
+    uint32 gpsHighTime; /* GPS High time                          */
+    uint32 gpsLowTime;  /* GPS Low time                           */
+    uint32 gpsWeek;     /* GPS week                               */
+    double vxVelocity;  /* VX velocity referenced to WGS-84 [m/s] */
+    double vyVelocity;  /* VY velocity referenced to WGS-84 [m/s] */
+    double vzVelocity;  /* VZ velocity referenced to WGS-84 [m/s] */
+    uint8  pvt;         /* Number of satellites used for PVT      */
+    float  pdop;        /* Position Dilution of Precision (PDOP)  */
+    uint8 checksum;    /* The checksum data, always begin with * */
+    uint8 reserve2[3]; 	  /* reserve                 */
+} SAC_Gps_TlmVelNumData_t;
+
+/* GPS numeric data */
+typedef struct
+{
+	uint8 gpsTlmPwr;
+	uint8 reserve[3];
+    SAC_Gps_TlmPosNumData_t gpsPosNumData;
+    SAC_Gps_TlmVelNumData_t gpsVelNumData;
+} SAC_Gps_TlmNumData_t;
+
+/* GPS data for internal */
+typedef struct
+{
+    uint8 gpsTlm;
+    uint8 reserve[3];
+    SAC_Gps_TlmRawData_t gpsRawData;
+    SAC_Gps_TlmNumData_t gpsNumData;
+} SAC_Gps_TlmData_t;
+
+/* global function define */
+int32 SAC_GPS_Init(void);
+int32 SAC_GPS_Power_Set(uint8 gpsPower);
+int32 SAC_GPS_Sync_Set(GPS_sync);
+int32 SAC_GPS_Status_Get(GPS_status*);
+int32 SAC_GPS_Data_Update(uint8 *rowDatPt, uint32 IfeAddrHead);
+void SAC_GPS_RawData_Get(SAC_Gps_TlmRawData_t *gpsRawData);
+void SAC_GPS_NumericData_Get(SAC_Gps_TlmNumData_t *gpsNumData);
+
+#endif /* _SAC_GPS_H_ */

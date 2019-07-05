@@ -1,0 +1,150 @@
+/**
+ * @brief	Sensor Actuator Controller(GAS)
+ */
+
+#include "cfe.h"
+#include "cfe_platform_cfg.h"
+#include "common_config.h"
+//#include "sac_ife.h"
+#include "sac_gas.h"
+
+#if defined(_CDH_) || defined(_GNC_)	// TODO 仮(BUS/GNC/SHUの整理は別途行う)
+EXPORT GAS_data gasStat;
+// TODO 誰が格納する？→SAC_IfeTlmDatCnv()にて、本ファイルに作成するUpdateにて格納する
+//LOCAL GAS_data gasStat;				/* レジスタの値から物理量に計算した値 */
+EXPORT SAC_GAS_TlmRawData_t gasRawData; /* 生データ */
+
+/**
+ * SAC_GAS_Init
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_GAS_Init(void)
+{
+	int32 ret = OS_SUCCESS;
+	/* 初期起動は地上からのコマンドで行う  */
+	/* TODO 排他処理の準備 */
+	return ret;
+}
+
+/**
+ * SAC_GAS_Data_Update
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ *
+ *   cf. F&F (F4-2)
+ *   cf. SAC_GPS_Data_Update
+ */
+EXPORT int32 SAC_GAS_Data_Update(uint8 *rowDatPt, uint32 IfeAddrHead)
+{
+	// TODO implement
+	int32 ret = OS_SUCCESS;
+
+#if defined(_CDH_) || defined(_GNC_)
+
+	 double  temp = k_GV;
+	 double  temp1 = k_VT;
+	 int flgResult;
+	uint32 offset = 0;
+
+	// TLM_FLG1:GAS_TLM
+	 /* check TLM_FLG1 if GAS Telemetry Data has updated
+		 * store the result (TURE of FALSE) to "gasStat.IsValid"
+		 *
+		 * GASテレメトリ更新フラグの確認：
+		 * この時、今回の"更新フラグ"を保持する。(gasStat.IsValid)
+		 * */
+
+	  offset = RMAP_ADDR_TLM_FLG1 - IfeAddrHead;
+	  flgResult = *(rowDatPt + offset) & RMAP_MASK_TLM_FLG1_GAS_TLM ;
+
+	  if (flgResult != 0) {
+		  gasStat.IsValid =  TRUE;
+
+	      }
+	  else{
+		  gasStat.IsValid =  FALSE;
+	  }
+
+	/* if the Data has updated, go process below */
+
+	/* Save GAS raw data in internal area */
+	//(use gasRawData)
+	  offset = (RMAP_ADDR_GAS_TLM_DAT - IfeAddrHead);
+	  memcpy((uint16 *)&gasRawData, (rowDatPt + offset), sizeof(SAC_GAS_TlmRawData_t));
+
+	  if(gasStat.IsValid ==  TRUE){
+	/* (a) アナログ中心電圧 from raw data (use gasStat.Vg0)
+	 * (a) get "Analog center voltage of GAS"  from raw data (use gasStat.Vg0)
+	 * */
+	  	  	  gasStat.Vg0 = temp * (double)(gasRawData.gasAD4);
+	  	  	 // printf("the value is %lf\n", gasStat.Vg0 );
+
+	/* (b) GAS計測地磁気X成分  from raw data (use gasStat[0].BgX)
+	 * (b) get "X component of Geomagnetic value which was measured by GAS" from raw data (use gasStat.BgX)
+	 * */
+			  gasStat.BgX = temp * (double)temp1 *(double)(gasRawData.gasAD1);
+
+	/* (c) GAS計測地磁気Y成分  from raw data (use gasStat[0].BgY)
+	 * (c) get "Y component of Geomagnetic value which was measured by GAS" from raw data (use gasStat.BgY)
+	 * */
+			  gasStat.BgY = temp * (double)temp1 *(double)(gasRawData.gasAD4);
+	/* (d) GAS計測地磁気Z成分  from raw data (use gasStat[0].BgZ)
+	 * (d) get "Z component of Geomagnetic value which was measured by GAS" from raw data (use gasStat.BgZ)
+	 * */
+			  gasStat.BgZ = temp * (double)temp1 * (double)(gasRawData.gasAD3);
+	  }
+
+#endif /* defined(_CDH_) || defined(_GNC_) */
+
+	return ret;
+}
+
+
+/**
+ * SAC_GAS_Status_Get
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_GAS_Status_Get(GAS_data* data)
+{
+	int32 ret = OS_SUCCESS;
+    int32 intLevel = OS_IntLock();
+
+	memcpy(data, &gasStat, sizeof(GAS_data));
+    OS_IntUnlock(intLevel);
+	return ret;
+}
+
+/**
+ * SAC_GAS_RawData_Get
+ * @param
+ *   xxxxxxxx    : [I]xxxx
+ * @return
+ *   xxxx
+ * @details
+ *   xxxx
+ */
+EXPORT int32 SAC_GAS_RawData_Get(SAC_GAS_TlmRawData_t* rawData)
+{
+	// TODO implement 排他処理？
+	int32 ret = OS_SUCCESS;
+
+	memcpy(rawData, &gasRawData, sizeof(SAC_GAS_TlmRawData_t));
+
+	return ret;
+}
+
+#endif /* defined(_CDH_) || defined(_GNC_) */

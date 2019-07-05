@@ -1,0 +1,64 @@
+/**
+ * @brief	Sensor Actuator Controller(GAS)
+ */
+#ifndef _SAC_GAS_H_
+#define _SAC_GAS_H_
+
+#ifdef _CDH_
+/* RMAP address */
+#define RMAP_ADDR_GAS_TLM_DAT			0x00000E90		/* TLM(R):GAS_TLM_DAT */
+// TODO #2002 チェック済
+#define  k_GV 5.0/65536.0;
+#define  k_VT 1.0/15000;
+#define RMAP_ADDR_TLM_FLG1				0x00000EA8		/* TLM(R):TLM_FLG1 */
+#define RMAP_MASK_TLM_FLG1_GAS_TLM	0x40;
+
+//#define  k_VT1 1.0/15000;
+//#define  k_VT2 1.0/15000;
+
+#endif /* _CDH_ */
+
+#ifdef _GNC_
+/* RMAP address */
+#define RMAP_ADDR_GAS_TLM_DAT			0x00000E90		/* TLM(R):GAS_TLM_DAT */
+
+#define  k_GV 5.0/65536.0;
+#define  k_VT 1.0/15000;
+#define RMAP_ADDR_TLM_FLG1				0x00000EA8		/* TLM(R):TLM_FLG1 */
+#define RMAP_MASK_TLM_FLG1_GAS_TLM	0x40;
+
+#endif /* _GNC_ */
+
+
+typedef struct {
+// TODO implement
+	int		Reserve;
+}GAS_status;
+
+typedef struct {
+	double	Vg0;
+	double	BgX;
+	double	BgY;
+	double	BgZ;
+	int8	IsValid;		/* データ有効フラグ */
+	int8	Reserve;
+
+}GAS_data;
+
+/* GAS raw data */
+typedef struct
+{
+		uint16 gasAD2;	/*n_y*/
+		uint16 gasAD1;	/* n_x */
+		uint16 gasAD4;	/* n_0 */
+		uint16 gasAD3;  /* n_z  */
+} SAC_GAS_TlmRawData_t;
+
+
+/* global function define */
+int32 SAC_GAS_Init(void);
+int32 SAC_GAS_Data_Update(uint8 *rowDatPt, uint32 IfeAddrHead);
+int32 SAC_GAS_Status_Get(GAS_data* data);
+int32 SAC_GAS_RawData_Get(SAC_GAS_TlmRawData_t* rawData);
+
+#endif /* _SAC_GAS_H_ */
